@@ -1,0 +1,75 @@
+# version: '3.8' - not needed 
+
+services:
+  # CouchDB for metadata storage
+  couchdb:
+    image: couchdb:3.3
+    container_name: ledgerlynx-couchdb
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+    ports:
+      - "5984:5984"
+    volumes:
+      - couchdb-data:/opt/couchdb/data
+    networks:
+      - ledgerlynx-network
+
+  # IPFS for file storage
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    container_name: ledgerlynx-ipfs
+    ports:
+      - "4001:4001"   # Swarm port
+      - "5001:5001"   # API port
+      - "8080:8080"   # Gateway port
+    volumes:
+      - ipfs-data:/data/ipfs
+    networks:
+      - ledgerlynx-network
+
+  # Flask API Backend - requires DockerFile
+  api:
+    build: ./api
+    container_name: ledgerlynx-api
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=http://couchdb:5984
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+      - IPFS_URL=http://ipfs:5001
+    depends_on:
+      - couchdb
+      - ipfs
+    volumes:
+      - ./api:/app
+      - /app/venv
+    networks:
+      - ledgerlynx-network
+
+  # React Frontend
+  frontend:
+    build: ./frontend
+    container_name: ledgerlynx-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_IPFS_GATEWAY=http://localhost:8080
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - ledgerlynx-network
+
+volumes:
+  couchdb-data:
+  ipfs-data:
+
+networks:
+  ledgerlynx-network:
+    driver: bridge
