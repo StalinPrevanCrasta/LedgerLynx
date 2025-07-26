@@ -40,12 +40,16 @@ services:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=password
       - IPFS_URL=http://ipfs:5001
+      # New Fabric environment variables
+      - FABRIC_NETWORK_PATH=./network
+      - FABRIC_WALLET_PATH=./wallet
     depends_on:
       - couchdb
       - ipfs
     volumes:
       - ./api:/app
       - /app/venv
+      - ./network:/app/network:ro # Read-only access to network config
     networks:
       - ledgerlynx-network
 
@@ -73,3 +77,5 @@ volumes:
 networks:
   ledgerlynx-network:
     driver: bridge
+  fabric_ledgerlynx:
+    external: true

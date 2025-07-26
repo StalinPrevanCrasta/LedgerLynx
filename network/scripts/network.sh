@@ -110,7 +110,67 @@ setupNetwork() {
     print_message "3. Deploy evidence management chaincode"
 }
 
-# Main execution
+
+# Function to bring up the Fabric network
+networkUp() {
+    print_message "Starting Hyperledger Fabric network..."
+    
+    # Check if network artifacts exist
+    if [ ! -f "channel-artifacts/genesis.block" ]; then
+        print_error "Network artifacts not found. Run './network.sh setup' first"
+        exit 1
+    fi
+    
+    # Start the network
+    cd docker
+    docker-compose -f docker-compose-fabric.yml up -d
+    
+    if [ $? -ne 0 ]; then
+        print_error "Failed to start Fabric network"
+        exit 1
+    fi
+    
+    # Wait for containers to be ready
+    print_message "Waiting for containers to be ready..."
+    sleep 10
+    
+    # Verify containers are running
+    docker-compose -f docker-compose-fabric.yml ps
+    
+    print_message "Fabric network started successfully!"
+    print_message "Network components:"
+    print_message "- Orderer: localhost:7050"
+    print_message "- Police Dept Peers: localhost:7051, localhost:8051"
+    print_message "- Forensics Lab Peers: localhost:9051, localhost:10051"
+    print_message "- Court System Peers: localhost:11051, localhost:12051"
+    
+    cd ..
+}
+
+# Function to bring down the Fabric network
+networkDown() {
+    print_message "Stopping Hyperledger Fabric network..."
+    
+    cd docker
+    docker-compose -f docker-compose-fabric.yml down --volumes --remove-orphans
+    
+    # Clean up any leftover containers
+    docker container prune -f
+    docker volume prune -f
+    
+    print_message "Fabric network stopped and cleaned up"
+    cd ..
+}
+
+# Function to restart the network
+networkRestart() {
+    print_message "Restarting Hyperledger Fabric network..."
+    networkDown
+    sleep 5
+    networkUp
+}
+
+# Update the main case statement
 case $1 in
     "crypto")
         generateCrypto
@@ -124,11 +184,24 @@ case $1 in
     "setup")
         setupNetwork
         ;;
+    "up")
+        networkUp
+        ;;
+    "down")
+        networkDown
+        ;;
+    "restart")
+        networkRestart
+        ;;
     *)
-        echo "Usage: $0 {crypto|genesis|channel|setup}"
-        echo "  crypto  - Generate cryptographic material"
-        echo "  genesis - Generate genesis block"
-        echo "  channel - Generate channel configuration"
-        echo "  setup   - Complete network setup"
+        echo "Usage: $0 {crypto|genesis|channel|setup|up|down|restart}"
+        echo "  crypto   - Generate cryptographic material"
+        echo "  genesis  - Generate genesis block"
+        echo "  channel  - Generate channel configuration"
+        echo "  setup    - Complete network setup"
+        echo "  up       - Start the Fabric network"
+        echo "  down     - Stop the Fabric network"
+        echo "  restart  - Restart the Fabric network"
         ;;
 esac
+
