@@ -1,0 +1,172 @@
+Organizations:
+  - &OrdererOrg
+    Name: OrdererMSP
+    ID: OrdererMSP
+    MSPDir: organizations/ordererOrganizations/example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.example.com:7050
+
+  - &PoliceDept
+    Name: PoliceDeptMSP
+    ID: PoliceDeptMSP
+    MSPDir: organizations/peerOrganizations/police.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('PoliceDeptMSP.admin', 'PoliceDeptMSP.peer', 'PoliceDeptMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('PoliceDeptMSP.admin', 'PoliceDeptMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('PoliceDeptMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('PoliceDeptMSP.peer')"
+
+  - &ForensicsLab
+    Name: ForensicsLabMSP
+    ID: ForensicsLabMSP
+    MSPDir: organizations/peerOrganizations/forensics.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ForensicsLabMSP.admin', 'ForensicsLabMSP.peer', 'ForensicsLabMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ForensicsLabMSP.admin', 'ForensicsLabMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ForensicsLabMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ForensicsLabMSP.peer')"
+
+  - &CourtSystem
+    Name: CourtSystemMSP
+    ID: CourtSystemMSP
+    MSPDir: organizations/peerOrganizations/court.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('CourtSystemMSP.admin', 'CourtSystemMSP.peer', 'CourtSystemMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('CourtSystemMSP.admin', 'CourtSystemMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('CourtSystemMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('CourtSystemMSP.peer')"
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  EtcdRaft:
+    Consenters:
+    - Host: orderer.example.com
+      Port: 7050
+      ClientTLSCert: organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+      ServerTLSCert: organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+  Addresses:
+    - orderer.example.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  ThreeOrgsOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities:
+        <<: *OrdererCapabilities
+    Consortiums:
+      SampleConsortium:
+        Organizations:
+          - *PoliceDept
+          - *ForensicsLab
+          - *CourtSystem
+
+  ThreeOrgsChannel:
+    Consortium: SampleConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *PoliceDept
+        - *ForensicsLab
+        - *CourtSystem
+      Capabilities:
+        <<: *ApplicationCapabilities

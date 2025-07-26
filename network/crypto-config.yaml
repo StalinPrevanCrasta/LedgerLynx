@@ -1,0 +1,32 @@
+# Defines the cryptographic material generation for our network
+OrdererOrgs:
+  - Name: Orderer
+    Domain: example.com
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: PoliceDeptMSP
+    Domain: police.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2  # 2 peers for redundancy
+    Users:
+      Count: 1  # 1 additional user besides admin
+
+  - Name: ForensicsLabMSP
+    Domain: forensics.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 1
+
+  - Name: CourtSystemMSP
+    Domain: court.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 1
